@@ -5,14 +5,36 @@
 
 
 class STL
-	@list = Array.new
+	def initialize
+		@list = Array.new
+	end
 	def add_triangle t
-		@list.insert(t)
+		t.unshift([0,0,0])
+		@list << t
 	end
 	def save_ascii file_name
 		File.open(file_name,"w") do | file |
-			file.puts "solid map"
+			file.puts "solid"
+			@list.each do |t|
+				file.puts "\tfacet normal #{t[0][0]} #{t[0][1]} #{t[0][2]}"
+				file.puts "\t\touter loop"
+				file.puts "\t\t\tvertex #{t[1][0]} #{t[1][1]} #{t[1][2]}"
+				file.puts "\t\t\tvertex #{t[2][0]} #{t[2][1]} #{t[2][2]}"
+				file.puts "\t\t\tvertex #{t[3][0]} #{t[3][1]} #{t[3][2]}"
+				file.puts "\t\tendloop"
+				file.puts "\tendfacet"
+			end
 			file.puts "endsolid"
+		end
+	end
+	def save_binary file_name
+		File.open(file_name,"wb") do |file|
+			file.print ([0]*80).pack("C*")
+			file.print [@list.length].pack("L")
+			@list.each do |t|
+				file.print t.flatten.pack("f*")
+				file.print ([0]*2).pack("C*")
+			end
 		end
 	end
 end
@@ -21,16 +43,16 @@ end
 # 39.9987°N, 105.3191°W
 # 39.9475°N, 105.2678°W
 
-D_NORTH = 40.000
-D_WEST = -105.3191
-D_EAST = -105.2478
-D_SOUTH = 39.9475
+# D_NORTH = 40.000
+# D_WEST = -105.3191
+# D_EAST = -105.2478
+# D_SOUTH = 39.9475
 
 # Golden
-# D_NORTH = 39.79170
-# D_WEST = -105.26367
-# D_EAST = -105.18059
-# D_SOUTH = 39.73311
+D_NORTH = 39.79170
+D_WEST = -105.26367
+D_EAST = -105.18059
+D_SOUTH = 39.73311
 
 
 
@@ -109,130 +131,77 @@ cropped.map! do |x|
 end
 
 puts cropped.flatten.max  
-puts "Writing file"
+puts "Creating STL Data Structure"
 cropped.reverse!
-File.open("flat.stl","w") do | file |
-	file.puts "solid map"
-	0.upto(cropped.length-2) do |y|
-		0.upto(cropped[y].length-2) do |x|
-			#Calc normal #try w/o
-			#file.puts "facet normal"
-			file.puts "\tfacet normal"
-			file.puts "\t\touter loop"
-			file.puts "\t\t\tvertex #{(x+1).to_f} #{(y+1).to_f} #{cropped[y+1][x+1]}"
-			file.puts "\t\t\tvertex #{x.to_f} #{(y+1).to_f} #{cropped[y+1][x]}"
-			file.puts "\t\t\tvertex #{x.to_f} #{y.to_f} #{cropped[y][x]}"
-			file.puts "\t\tendloop"
-			file.puts "\tendfacet"
+stl = STL.new
+0.upto(cropped.length-2) do |y|
+	0.upto(cropped[y].length-2) do |x|
+		t = [[x+1, y+1, cropped[y+1][x+1]],
+			 [  x, y+1,   cropped[y+1][x]],
+			 [  x,   y,    cropped[y][x]]];
 
-			file.puts "\tfacet normal"
-			file.puts "\t\touter loop"
-			file.puts "\t\t\tvertex #{x.to_f} #{y.to_f} #{cropped[y][x]}"
-			file.puts "\t\t\tvertex #{(x+1).to_f} #{y.to_f} #{cropped[y][x+1]}"
-			file.puts "\t\t\tvertex #{(x+1).to_f} #{(y+1).to_f} #{cropped[y+1][x+1]}"
-			file.puts "\t\tendloop"
-			file.puts "\tendfacet"
-		end
+		stl.add_triangle t
+
+		t = [[   x,   y,      cropped[y][x]],
+			 [ x+1,   y,    cropped[y][x+1]],
+			 [ x+1, y+1, cropped[y+1][x+1]]];
+
+		stl.add_triangle t
 	end
-
-	0.upto(cropped[0].length-2) do |x|
-			file.puts "\tfacet normal"
-			file.puts "\t\touter loop"
-			file.puts "\t\t\tvertex #{x.to_f} 0.0 0.0"
-			file.puts "\t\t\tvertex #{(x+1).to_f} 0.0 0.0"
-			file.puts "\t\t\tvertex #{x.to_f} 0.0 #{cropped[0][x]}"
-			file.puts "\t\tendloop"
-			file.puts "\tendfacet"
-			file.puts "\tfacet normal"
-			file.puts "\t\touter loop"
-			file.puts "\t\t\tvertex #{(x+1).to_f} 0.0 0.0"
-			file.puts "\t\t\tvertex #{(x+1).to_f} 0.0 #{cropped[0][x+1]}"
-			file.puts "\t\t\tvertex #{x.to_f} 0.0 #{cropped[0][x]}"
-			file.puts "\t\tendloop"
-			file.puts "\tendfacet"
-	end
-
-	0.upto(cropped[0].length-2) do |x|
-			file.puts "\tfacet normal"
-			file.puts "\t\touter loop"
-			file.puts "\t\t\tvertex #{x.to_f} #{(dy-1).to_f} #{cropped[dy-1][x]}"
-			file.puts "\t\t\tvertex #{(x+1).to_f} #{(dy-1).to_f} 0.0"
-			file.puts "\t\t\tvertex #{x.to_f} #{(dy-1).to_f} 0.0"
-			file.puts "\t\tendloop"
-			file.puts "\tendfacet"
-			file.puts "\tfacet normal"
-			file.puts "\t\touter loop"
-			file.puts "\t\t\tvertex #{x.to_f} #{(dy-1).to_f} #{cropped[dy-1][x]}"
-			file.puts "\t\t\tvertex #{(x+1).to_f} #{(dy-1).to_f} #{cropped[dy-1][x+1]}"
-			file.puts "\t\t\tvertex #{(x+1).to_f} #{(dy-1).to_f} 0.0"
-			file.puts "\t\tendloop"
-			file.puts "\tendfacet"
-	end
-
-	0.upto(cropped.length-2) do |y|
-			file.puts "\tfacet normal"
-			file.puts "\t\touter loop"
-			file.puts "\t\t\tvertex 0.0 #{y.to_f} 0.0"
-			file.puts "\t\t\tvertex 0.0 #{y.to_f} #{cropped[y][0]}"
-			file.puts "\t\t\tvertex 0.0 #{(y+1).to_f} 0.0"
-			file.puts "\t\tendloop"
-			file.puts "\tendfacet"
-			file.puts "\tfacet normal"
-			file.puts "\t\touter loop"
-			file.puts "\t\t\tvertex 0.0 #{y.to_f} #{cropped[y][0]}"
-			file.puts "\t\t\tvertex 0.0 #{(y+1).to_f} #{cropped[y+1][0]}"
-			file.puts "\t\t\tvertex 0.0 #{(y+1).to_f} 0.0"
-			file.puts "\t\tendloop"
-			file.puts "\tendfacet"
-	end
-
-	0.upto(cropped.length-2) do |y|
-			file.puts "\tfacet normal"
-			file.puts "\t\touter loop"
-			file.puts "\t\t\tvertex #{(dx-1).to_f} #{(y+1).to_f} 0.0"
-			file.puts "\t\t\tvertex #{(dx-1).to_f} #{y.to_f} #{cropped[y][dx-1]}"
-			file.puts "\t\t\tvertex #{(dx-1).to_f} #{y.to_f} 0.0"
-			file.puts "\t\tendloop"
-			file.puts "\tendfacet"
-			file.puts "\tfacet normal"
-			file.puts "\t\touter loop"
-			file.puts "\t\t\tvertex #{(dx-1).to_f} #{(y+1).to_f} 0.0"
-			file.puts "\t\t\tvertex #{(dx-1).to_f} #{(y+1).to_f} #{cropped[y+1][dx-1]}"
-			file.puts "\t\t\tvertex #{(dx-1).to_f} #{y.to_f} #{cropped[y][dx-1]}"
-			file.puts "\t\tendloop"
-			file.puts "\tendfacet"
-	end
-
-		file.puts "\tfacet normal"
-		file.puts "\t\touter loop"
-		file.puts "\t\t\tvertex 0.0 #{(dy-1).to_f} 0.0"
-		file.puts "\t\t\tvertex #{(dx-1).to_f} 0.0 0.0"
-		file.puts "\t\t\tvertex 0.0 0.0 0.0"
-		file.puts "\t\tendloop"
-		file.puts "\tendfacet"
-		file.puts "\tfacet normal"
-		file.puts "\t\touter loop"
-		file.puts "\t\t\tvertex 0.0 #{(dy-1).to_f} 0.0"
-		file.puts "\t\t\tvertex #{(dx-1).to_f} #{(dy-1).to_f} 0.0 0.0"
-		file.puts "\t\t\tvertex #{(dx-1).to_f} 0.0 0.0"
-		file.puts "\t\tendloop"
-		file.puts "\tendfacet"
-
-
-	file.puts "endsolid"
 end
 
+0.upto(cropped[0].length-2) do |x|
+		t = [[   x, 0.0,            0.0],
+			 [ x+1, 0.0,            0.0],
+			 [   x, 0.0, cropped[0][x]]];
+		stl.add_triangle t
+		t = [[ x+1, 0.0,             0.0],
+			 [ x+1, 0.0, cropped[0][x+1]],
+			 [   x, 0.0, cropped[0][x]]];
+		stl.add_triangle t
+end
 
+0.upto(cropped[0].length-2) do |x|
+		t = [[   x, dy-1, cropped[dy-1][x]],
+			 [ x+1, dy-1,            0.0],
+			 [   x, dy-1,            0.0]];
+		stl.add_triangle t
+		t = [[   x, dy-1,   cropped[dy-1][x]],
+			 [ x+1, dy-1, cropped[dy-1][x+1]],
+			 [ x+1, dy-1,                0.0]];
+		stl.add_triangle t	
+end
 
+0.upto(cropped.length-2) do |y|
+		t = [[ 0.0,   y,           0.0],
+			 [ 0.0,   y, cropped[y][0]],
+			 [ 0.0, y+1,           0.0]];
+		stl.add_triangle t
+		t = [[ 0.0,   y,   cropped[y][0]],
+			 [ 0.0, y+1, cropped[y+1][0]],
+			 [ 0.0, y+1,             0.0]];
+		stl.add_triangle t	
+end
 
+0.upto(cropped.length-2) do |y|
+		t = [[ dx-1, y+1,              0.0],
+			 [ dx-1,   y, cropped[y][dx-1]],
+			 [ dx-1,   y,              0.0]];
+		stl.add_triangle t
+		t = [[ dx-1, y+1,                0.0],
+			 [ dx-1, y+1, cropped[y+1][dx-1]],
+			 [ dx-1,   y,   cropped[y][dx-1]]];
+		stl.add_triangle t		
+end
 
-
-
-
-
-
-
-
-
-
+t = [[  0.0, dy-1, 0.0],
+	 [ dx-1,  0.0, 0.0],
+	 [  0.0,  0.0, 0.0]];
+stl.add_triangle t
+t = [[  0.0, dy-1, 0.0],
+	 [ dx-1, dy-1, 0.0],
+	 [ dx-1,  0.0, 0.0]];
+stl.add_triangle t		
+puts "Writing file"
+stl.save_binary "stuffbin.stl"
 
