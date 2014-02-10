@@ -9,8 +9,17 @@ class STL
 		@list = Array.new
 	end
 	def add_triangle t
-		t.unshift([0,0,0])
+		t.unshift(normal(t))
 		@list << t
+	end
+
+	def normal t
+		a = [t[2][0]-t[1][0],t[2][1]-t[1][1],t[2][2]-t[1][2]]
+		b = [t[0][0]-t[1][0],t[0][1]-t[1][1],t[0][2]-t[1][2]]
+		#axb
+		n=[ a[1]*b[2]-b[1]*a[2] , a[2]*b[0]-a[0]*b[2], a[0]*b[1]-b[0]*a[1]]
+		length = Math.sqrt(n.inject(0){|m,x| m+x*x})
+		return n.map{|x| x/length}
 	end
 	def save_ascii file_name
 		File.open(file_name,"w") do | file |
@@ -48,12 +57,29 @@ end
 # D_EAST = -105.2478
 # D_SOUTH = 39.9475
 
-# Golden
-D_NORTH = 39.79170
-D_WEST = -105.26367
-D_EAST = -105.18059
-D_SOUTH = 39.73311
+# # Golden
+# D_NORTH = 39.79170
+# D_WEST = -105.26367
+# D_EAST = -105.18059
+# D_SOUTH = 39.73311
 
+
+#LAT and LONG of upper left hand pixel
+# NORTH = 40.00055555556
+# WEST = -106.0005555556
+# EAST = -104.9994444445
+# SOUTH = 38.99944444444
+
+#Devils Tower
+D_NORTH = 44.60081
+D_WEST = -104.73011
+D_EAST = -104.69998
+D_SOUTH = 44.58284
+
+NORTH = 45.00055555556
+WEST = -105.0005555556
+EAST = -103.9994444445
+SOUTH = 43.99944444444
 
 
 #Pixel 
@@ -63,11 +89,7 @@ HEIGHT = 10812
 #Vertical Exaggeration
 VERT_MULT = 2
 
-#LAT and LONG of upper left hand pixel
-NORTH = 40.00055555556
-WEST = -106.0005555556
-EAST = -104.9994444445
-SOUTH = 38.99944444444
+
 
 ANGULAR_WIDTH = EAST - WEST
 ANGULAR_PX_WIDTH = ANGULAR_WIDTH/WIDTH
@@ -91,7 +113,7 @@ puts "Output image will start at (" + sx.to_s + "," + sy.to_s + ")"
 puts "Output image would be " + dx.to_s + "x" + dy.to_s
 
 puts "Reading File"
-f = File.binread("floatn40w106_13.flt")
+f = File.binread("/Users/jzeimen/Downloads/n45w105/floatn45w105_13.flt")
 puts "Unpacking File"
 a = f.unpack("f*")
 f=0;
@@ -127,7 +149,7 @@ two_d=0
 MIN = cropped.flatten.min 
 puts MIN
 cropped.map! do |x|
-	x.map!{|y| (y-MIN)*0.1*VERT_MULT}
+	x.map!{|y| 5+(y-MIN)*0.1*VERT_MULT}
 end
 
 puts cropped.flatten.max  
@@ -203,5 +225,9 @@ t = [[  0.0, dy-1, 0.0],
 	 [ dx-1,  0.0, 0.0]];
 stl.add_triangle t		
 puts "Writing file"
-stl.save_binary "stuffbin.stl"
+stl.save_binary "devils.stl"
+
+
+
+
 
